@@ -3,6 +3,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "media.h"
+
 unsigned char RAM[0x1000];
 
 unsigned char V[16];
@@ -147,6 +149,8 @@ void step(){
 				case 0x00E0: /* clear screen */
 					for(int i=0 ; i<256 ; i++)
 						SCREEN[i] = 0;
+					clear_screen();
+					send_draw();
 					break;
 				case 0x00EE: /* return from a subroutine */
 					if(SP)
@@ -257,7 +261,7 @@ void step(){
 					*screen_tile ^= sprite_tile;
 				}
 			}
-			/*XXX:debug*/
+			/*TODO: mybe uptade just the right part*/
 			display();
 			//usleep(500000);
 			break;
@@ -335,11 +339,11 @@ void display(){
 	for(int y=0 ; y<32 ; y++){
 		for(int xc=0 ; xc<8 ; xc++){
 			for(int xb=7 ; xb>=0 ; xb--){
-				printf("%s",SCREEN[y*8+xc]&1<<xb ? "█":" ");
+				draw(xc*8 + 7-xb, y, SCREEN[y*8+xc]&1<<xb ? 1:0);
 			}
 		}
-		printf("\n");
 	}
+	send_draw();
 }
 
 int main(int argc, char **argv){
@@ -360,16 +364,20 @@ int main(int argc, char **argv){
 	fclose(rom);
 
 	/*TODO: init more stuff: graphics, input, sound, timer*/
+	m_init(argc, argv);
 
 	/* Let's go */
 	for(int i=0 ; 1 ; i++){
+		KEYBOARD = get_input(KEYBOARD);
+		if(KEYBOARD == (unsigned short)-1)
+			break;
+
 		step();
-		/*XXX:debug*/
-		/*TODO: other stuff*/
-		//display();
-		nanosleep(&(struct timespec){0,1000000},NULL);
+		
+		//nanosleep(&(struct timespec){0,1000000},NULL);
+		wait_tick();
+
 		if(!(i%16)){
-			//display();
 			if(DT)
 				DT--;
 			if(ST)
@@ -377,6 +385,8 @@ int main(int argc, char **argv){
 		}
 		printf("i=%5d, DT=%3d         \r", i, (int)DT);
 	}
+
+	m_quit();
 
 	return 0;
 }
