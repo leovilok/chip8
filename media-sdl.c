@@ -1,5 +1,7 @@
-#include <SDL2/SDL.h>
+#include <assert.h>
 #include <string.h>
+
+#include <SDL2/SDL.h>
 
 #include "media.h"
 
@@ -21,24 +23,24 @@ SDL_Rect rect = {.x=0,.y=0,.w=SCREEN_WIDTH,.h=SCREEN_HEIGHT};
 unsigned clock;
 
 /*
-┌────┬────┬────┬────┐
-│ 1  │ 2  │ 3  │ C  │
-├────┼────┼────┼────┤
-│ 4  │ 5  │ 6  │ D  │
-├────┼────┼────┼────┤
-│ 7  │ 8  │ 9  │ E  │
-├────┼────┼────┼────┤
-│ A  │ 0  │ B  │ F  │
-└────┴────┴────┴────┘
+┌───┬───┬───┬───┐
+│ 1 │ 2 │ 3 │ C │
+├───┼───┼───┼───┤
+│ 4 │ 5 │ 6 │ D │
+├───┼───┼───┼───┤
+│ 7 │ 8 │ 9 │ E │
+├───┼───┼───┼───┤
+│ A │ 0 │ B │ F │
+└───┴───┴───┴───┘
 */
 
 SDL_Keycode keys[16] = {
 	SDLK_v,
-	SDLK_QUOTEDBL, SDLK_QUOTE, SDLK_LEFTPAREN,
+	SDLK_3, SDLK_4, SDLK_5,
 	SDLK_e, SDLK_r, SDLK_t,
 	SDLK_d, SDLK_f, SDLK_g,
 	SDLK_c, SDLK_b,
-	SDLK_MINUS, SDLK_y, SDLK_h, SDLK_n
+	SDLK_6, SDLK_y, SDLK_h, SDLK_n
 };
 
 int m_init(int argc, char **argv){
@@ -117,6 +119,9 @@ void clear_screen(void){
 }
 
 void draw(int x, int y, int value){
+	assert(0<=x && x<64);
+	assert(0<=y && y<32);
+
 	for(int i=0 ; i<PIXEL_RADIUS ; i++){
 		for(int j=0 ; j<PIXEL_RADIUS ; j++){
 			pixels[(y*PIXEL_RADIUS+i)*SCREEN_WIDTH +

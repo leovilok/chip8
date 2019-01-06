@@ -1,9 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <unistd.h>
 
 #include "media.h"
+
+#define FREQ 840
 
 unsigned char RAM[0x1000];
 
@@ -335,22 +338,17 @@ void step(){
 }
 
 void display(){
-	printf("\033[H");
 	for(int y=0 ; y<32 ; y++){
-		for(int xc=0 ; xc<8 ; xc++){
-			for(int xb=7 ; xb>=0 ; xb--){
-				draw(xc*8 + 7-xb, y, SCREEN[y*8+xc]&1<<xb ? 1:0);
-			}
+		for(int x=0 ; x<64 ; x++){
+			draw(x, y, SCREEN[y*8+x/8]&1<<(7-x%8) ? 1:0);
 		}
 	}
-	send_draw();
 }
 
 int main(int argc, char **argv){
 
 	/* Set up char sprites */	
-	for(int i=0 ; i<sizeof(char_sprites) ; i++)
-		RAM[CHAR_SPRITES_OFFSET+i] = char_sprites[i];
+	memcpy(RAM+CHAR_SPRITES_OFFSET, char_sprites, sizeof(char_sprites));
 
 	/* Load ROM */
 	if(argc<2)
@@ -374,16 +372,21 @@ int main(int argc, char **argv){
 
 		step();
 		
-		//nanosleep(&(struct timespec){0,1000000},NULL);
-		wait_tick();
+		nanosleep(&(struct timespec){0,(1000000000/840)},NULL);
+		//wait_tick();
 
-		if(!(i%16)){
+		if(!(i%(FREQ/60))){
+			send_draw();
 			if(DT)
 				DT--;
 			if(ST)
 				ST--;
 		}
-		printf("i=%5d, DT=%3d         \r", i, (int)DT);
+		printf("i=%5d, DT=%3d, K=[", i, (int)DT);
+		for(int k=0 ; k<16;k++)
+			printf("%s", KEYBOARD & 1<<k ? "1":"0");
+
+		printf("]      \r");
 	}
 
 	m_quit();
