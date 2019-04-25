@@ -318,11 +318,11 @@ void step(){
 					RAM[I]   = (V[I_X(instr)]/100)%10;
 					break;
 				case 0x55:
-					for(int i=0 ; i<I_X(instr) ; i++)
+					for(int i=0 ; i<=I_X(instr) ; i++)
 						RAM[I+i] = V[i];
 					break;
 				case 0x65:
-					for(int i=0 ; i<I_X(instr) ; i++)
+					for(int i=0 ; i<=I_X(instr) ; i++)
 						V[i] = RAM[I+i];
 					break;
 				default: /*unknown instruction*/
