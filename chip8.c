@@ -253,12 +253,13 @@ void step(){
 			unsigned char shift = x%8;
 
 			for(int i=0;i<I_N(instr);i++){
-				unsigned char *screen_tile = &SCREEN[(y+i)*8+x/8];
+				unsigned char wrapped_y = (y+i)%32;
+				unsigned char *screen_tile = &SCREEN[wrapped_y*8+x/8];
 				unsigned char sprite_tile = RAM[I+i]>>shift;
 				V[0xf] |= *screen_tile & sprite_tile ? 1:0;
 				*screen_tile ^= sprite_tile;
 				if(shift){
-					screen_tile = &SCREEN[(y+i)*8+(x/8+1)%8];
+					screen_tile = &SCREEN[wrapped_y*8+(x/8+1)%8];
 					sprite_tile = RAM[I+i]<<(8u-shift);
 					V[0xf] |= *screen_tile & sprite_tile ? 1:0;
 					*screen_tile ^= sprite_tile;
