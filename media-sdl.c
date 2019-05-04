@@ -61,7 +61,7 @@ static void buzzer_callback(void* userdata, Uint8* stream, int len){
 		else /* saw waves at the moment */
 			stream[i] =
 				((sample_num++*256*BUZZER_FREQ/SOUND_DEV_FREQ)
-				 %256)*BUZZER_VOL;
+				 %256 > 127 ? 256 : 0)*BUZZER_VOL;
 	}
 }
 
