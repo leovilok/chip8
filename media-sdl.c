@@ -13,12 +13,22 @@
 #define WINDOW_NAME "CHIP-8 emulator"
 
 #define NUM_PIXELS (SCREEN_WIDTH*SCREEN_HEIGHT)
+
+#define SOUND_DEV_FREQ 48000
+#define SOUND_SAMPLES 1024
+#define BUZZER_FREQ 440
+#define BUZZER_VOL .05
+
 unsigned char *pixels;
 
 SDL_Window *window;
 SDL_Renderer *renderer;
 SDL_Texture *texture;
 SDL_Rect rect = {.x=0,.y=0,.w=SCREEN_WIDTH,.h=SCREEN_HEIGHT};
+
+/* sound state*/
+int buzzer_state = 0;
+long sample_num = 0;
 
 unsigned clock;
 
@@ -42,6 +52,18 @@ SDL_Keycode keys[16] = {
 	SDLK_c, SDLK_b,
 	SDLK_6, SDLK_y, SDLK_h, SDLK_n
 };
+
+static void buzzer_callback(void* userdata, Uint8* stream, int len){
+	(void) userdata;
+	for(int i=0 ; i<len ; i++){
+		if(buzzer_state == 0)
+			stream[i] = 0;
+		else /* saw waves at the moment */
+			stream[i] =
+				((sample_num++*256*BUZZER_FREQ/SOUND_DEV_FREQ)
+				 %256)*BUZZER_VOL;
+	}
+}
 
 int m_init(int argc, char **argv){
 	(void)argc, (void)argv;
@@ -67,6 +89,16 @@ int m_init(int argc, char **argv){
 
 	SDL_RenderClear(renderer);
 
+	SDL_OpenAudio(&(SDL_AudioSpec){
+			.freq = SOUND_DEV_FREQ,
+			.format = AUDIO_U8,
+			.channels = 1,
+			.samples = SOUND_SAMPLES,
+			.callback = buzzer_callback,
+			}, NULL);
+
+	SDL_PauseAudio(0);
+
 	clock = SDL_GetTicks();	
 
 	return 0;
@@ -76,6 +108,9 @@ void m_quit(void){
 	SDL_DestroyTexture(texture);
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
+
+	SDL_CloseAudio();
+
 	SDL_Quit();
 
 	free(pixels);
@@ -140,6 +175,10 @@ void send_draw(void){
 	SDL_RenderCopy(renderer, texture, &rect, &rect);
 	SDL_RenderPresent(renderer);
 	SDL_RenderClear(renderer);
+}
+
+void set_buzzer_state(int state){
+	buzzer_state = state;
 }
 
 void wait_tick(void){

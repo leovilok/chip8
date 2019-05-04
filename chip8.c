@@ -383,6 +383,8 @@ int main(int argc, char **argv){
 			if(ST)
 				ST--;
 		}
+		set_buzzer_state(ST ? 1 : 0);
+
 		printf("i=%5d, DT=%3d, K=[", i, (int)DT);
 		for(int k=0 ; k<16;k++)
 			printf("%s", KEYBOARD & 1<<k ? "1":"0");
