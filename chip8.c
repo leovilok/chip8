@@ -133,13 +133,10 @@ char char_sprites[80] = {
 #define I_NNN(instr) ((((instr)[0]&15u)<<8u) | (instr)[1])
 #define I_ADDR(instr) I_NNN(instr)
 #define I_NN(instr) ((instr)[1])
-#define I_KK(instr) I_NN(instr)
 #define I_N(instr) ((instr)[1]&15u)
-#define I_NIBBLE(instr) I_N(inst)
 #define I_X(instr) ((instr)[0]&15u)
 #define I_Y(instr) ((instr)[1]>>4u)
 
-/*XXX:debug*/
 void display();
 
 void step(){
@@ -154,105 +151,101 @@ void step(){
 						SCREEN[i] = 0;
 					clear_screen();
 					send_draw();
-					break;
+					return;
 				case 0x00EE: /* return from a subroutine */
 					if(SP)
 						PC=STACK[--SP];
-					break;
-				default: /*legacy instr*/
+					return;
+				default: /* legacy machine routine call */
 					/*TODO: warn*/
-					break;
+					return;
 			}
-			break;
+			return;
 		case 1: /* jump */
 			PC=I_ADDR(instr);
-			break;
+			return;
 		case 2: /* call a subroutine */
 			STACK[SP++] = PC;
 			PC=I_ADDR(instr);
-			break;
+			return;
 		case 3:
 			if(V[I_X(instr)] == I_NN(instr))
 				PC+=2;
-			break;
+			return;
 		case 4:
 			if(V[I_X(instr)] != I_NN(instr))
 				PC+=2;
-			break;
+			return;
 		case 5:
 			if(V[I_X(instr)] == V[I_Y(instr)])
 				PC+=2;
-			break;
+			return;
 		case 6:
 			V[I_X(instr)] = I_NN(instr);
-			break;
+			return;
 		case 7:
 			V[I_X(instr)] += I_NN(instr);
-			break;
+			return;
 		case 8:
 			switch(I_N(instr)){
 				case 0:
 					V[I_X(instr)] = V[I_Y(instr)];
-					break;
+					return;
 				case 1:
 					V[I_X(instr)] |= V[I_Y(instr)];
-					break;
+					return;
 				case 2:
 					V[I_X(instr)] &= V[I_Y(instr)];
-					break;
+					return;
 				case 3:
 					V[I_X(instr)] ^= V[I_Y(instr)];
-					break;
+					return;
 				case 4:
 					V[0xf] = V[I_X(instr)] + V[I_Y(instr)] > 0xff ? 1 : 0;
 					V[I_X(instr)] += V[I_Y(instr)];
-					break;
+					return;
 				case 5:
 					V[0xf] = V[I_X(instr)] > V[I_Y(instr)] ? 1 : 0;
 					V[I_X(instr)] -= V[I_Y(instr)];
-					break;
+					return;
 				case 6:
 					V[0xf] = V[I_X(instr)]&1u;
 					V[I_X(instr)] >>= 1u;
-					break;
+					return;
 				case 7:
 					V[0xf] = V[I_X(instr)] < V[I_Y(instr)] ? 1 : 0;
 					V[I_X(instr)] = V[I_Y(instr)] - V[I_X(instr)] ;
-					break;
+					return;
 				case 0xE:
 					V[0xf] = V[I_X(instr)]>>7u;
 					V[I_X(instr)] <<= 1u;
-					break;
+					return;
 
-
-
-				default: /*unknown instruction*/
-					/*TODO: warn*/
-					break;
+				default: /* unknown instruction */
+					/*TODO: warn */
+					return;
 			}
-			break;
+			return;
 		case 9:
 			if(V[I_X(instr)] != V[I_Y(instr)])
 				PC+=2;
-			break;
+			return;
 		case 0xA:
 			I=I_ADDR(instr);
-			break;
+			return;
 		case 0xB:
 			PC = I_ADDR(instr) + V[0];
-			break;
+			return;
 		case 0xC:
 			V[I_X(instr)] = rand() & I_NN(instr);
-			break;
-		case 0xD: /*display*/
-			/*TODO:check OOB coords*/
-			/*assert(Vx in [0;63], Vy in [0;31]), Vy+nible in [0;31]*/
+			return;
+		case 0xD: /* display */
 			V[0xf] = 0;
 			unsigned char x = V[I_X(instr)];
 			unsigned char y = V[I_Y(instr)];
 			unsigned char shift = x%8;
 
-			for(int i=0;i<I_N(instr);i++){
+			for(unsigned i=0;i<I_N(instr);i++){
 				unsigned char wrapped_y = (y+i)%32;
 				unsigned char *screen_tile = &SCREEN[wrapped_y*8+x/8];
 				unsigned char sprite_tile = RAM[I+i]>>shift;
@@ -265,31 +258,32 @@ void step(){
 					*screen_tile ^= sprite_tile;
 				}
 			}
-			/*TODO: mybe uptade just the right part*/
+
+			/*TODO: maybe update only written regions */
 			display();
-			//usleep(500000);
-			break;
+			return;
+
 		case 0xE:
 			switch(I_NN(instr)){
 				case 0x9E:
 					if(KEYBOARD & 1<<(V[I_X(instr)]))
 						PC+=2;
-					break;
+					return;
 				case 0xA1:
 					if(!(KEYBOARD & 1<<(V[I_X(instr)])))
 						PC+=2;
-					break;
-				default: /*unknown instruction*/
-					/*TODO: warn*/
-					break;
+					return;
+				default: /* unknown instruction */
+					/*TODO: warn */
+					return;
 				
 			}
-			break;
+			return;
 		case 0xF:
 			switch(I_NN(instr)){
 				case 0x07:
 					V[I_X(instr)]=DT;
-					break;
+					return;
 				case 0x0A:
 					if(!KEYBOARD)
 						PC-=2;
@@ -298,42 +292,42 @@ void step(){
 						for(unsigned char k=KEYBOARD;!(k&1);k>>=1)
 							V[I_X(instr)]++;
 					}
-					break;
+					return;
 				case 0x15:
 					DT=V[I_X(instr)];
-					break;
+					return;
 				case 0x18:
 					ST=V[I_X(instr)];
-					break;
+					return;
 				case 0x1E:
 					I+=V[I_X(instr)];
-					break;
+					return;
 				case 0x29:
-					/*TODO: warn OOB*/
+					/*TODO: warn OOB */
 					if(V[I_X(instr)]<=0xF)
 						I = CHAR_SPRITES_OFFSET + 5*V[I_X(instr)];
-					break;
+					return;
 				case 0x33:
 					RAM[I+2] = V[I_X(instr)]%10;
 					RAM[I+1] = (V[I_X(instr)]/10)%10;
 					RAM[I]   = (V[I_X(instr)]/100)%10;
-					break;
+					return;
 				case 0x55:
-					for(int i=0 ; i<=I_X(instr) ; i++)
+					for(unsigned i=0 ; i<=I_X(instr) ; i++)
 						RAM[I+i] = V[i];
-					break;
+					return;
 				case 0x65:
-					for(int i=0 ; i<=I_X(instr) ; i++)
+					for(unsigned i=0 ; i<=I_X(instr) ; i++)
 						V[i] = RAM[I+i];
-					break;
-				default: /*unknown instruction*/
-					/*TODO: warn*/
-					break;
+					return;
+				default: /* unknown instruction */
+					/* TODO: warn */
+					return;
 			}
-			break;
-		default: /*unknown instr*/
-			/*TODO: warn*/
-			break;
+			return;
+		default: /* unreachable */
+			/*TODO: assert */
+			return;
 	}
 
 }
@@ -362,7 +356,7 @@ int main(int argc, char **argv){
 		return 3;
 	fclose(rom);
 
-	/*TODO: init more stuff: graphics, input, sound, timer*/
+	/* Init media stuff: graphics, input, sound */
 	m_init(argc, argv);
 
 	/* Let's go */
@@ -373,7 +367,7 @@ int main(int argc, char **argv){
 
 		step();
 		
-		nanosleep(&(struct timespec){0,(1000000000/840)},NULL);
+		nanosleep(&(struct timespec){0,(1000000000/FREQ)},NULL);
 		//wait_tick();
 
 		if(!(i%(FREQ/60))){
@@ -383,15 +377,16 @@ int main(int argc, char **argv){
 			if(ST)
 				ST--;
 		}
+
 		set_buzzer_state(ST ? 1 : 0);
 
 		printf("i=%5d, DT=%3d, K=[", i, (int)DT);
 		for(int k=0 ; k<16;k++)
 			printf("%s", KEYBOARD & 1<<k ? "1":"0");
-
 		printf("]      \r");
 	}
 
+	/* Quit media */
 	m_quit();
 
 	return 0;
