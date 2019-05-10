@@ -137,6 +137,8 @@ char char_sprites[80] = {
 #define I_X(instr) ((instr)[0]&15u)
 #define I_Y(instr) ((instr)[1]>>4u)
 
+#define WARN(...) (fprintf(stderr, __VA_ARGS__))
+
 static void display(){
 	for(int y=0 ; y<32 ; y++){
 		for(int x=0 ; x<64 ; x++){
@@ -163,7 +165,8 @@ void step(){
 						PC=STACK[--SP];
 					return;
 				default: /* legacy machine routine call */
-					/*TODO: warn*/
+					WARN("Legacy machine routine call: %X\n",
+							(unsigned) I_SHORT(instr));
 					return;
 			}
 			return;
@@ -228,7 +231,8 @@ void step(){
 					return;
 
 				default: /* unknown instruction */
-					/*TODO: warn */
+					WARN("Unknown instruction: %X\n",
+							(unsigned) I_SHORT(instr));
 					return;
 			}
 			return;
@@ -280,7 +284,8 @@ void step(){
 						PC+=2;
 					return;
 				default: /* unknown instruction */
-					/*TODO: warn */
+					WARN("Unknown instruction: %X\n",
+							(unsigned) I_SHORT(instr));
 					return;
 				
 			}
@@ -327,7 +332,8 @@ void step(){
 						V[i] = RAM[I+i];
 					return;
 				default: /* unknown instruction */
-					/* TODO: warn */
+					WARN("Unknown instruction: %X\n",
+							(unsigned) I_SHORT(instr));
 					return;
 			}
 			return;
