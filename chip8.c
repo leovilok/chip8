@@ -433,7 +433,7 @@ int main(int argc, char **argv){
 
 		printf("i=%5d, DT=%3d, K=[", i, (int)DT);
 		for(int k=0 ; k<16;k++)
-			printf("%s", KEYBOARD & 1<<k ? "1":"0");
+			printf("%c", KEYBOARD & 1<<k ? "0123456789ABCDEF"[k]:'.');
 		printf("]      \r");
 	}
 
