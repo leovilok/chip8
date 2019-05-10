@@ -137,7 +137,13 @@ char char_sprites[80] = {
 #define I_X(instr) ((instr)[0]&15u)
 #define I_Y(instr) ((instr)[1]>>4u)
 
-void display();
+static void display(){
+	for(int y=0 ; y<32 ; y++){
+		for(int x=0 ; x<64 ; x++){
+			draw(x, y, SCREEN[y*8+x/8]&1<<(7-x%8) ? 1:0);
+		}
+	}
+}
 
 void step(){
 	unsigned char instr[2] = {RAM[PC], RAM[PC+1]};
@@ -332,16 +338,7 @@ void step(){
 
 }
 
-void display(){
-	for(int y=0 ; y<32 ; y++){
-		for(int x=0 ; x<64 ; x++){
-			draw(x, y, SCREEN[y*8+x/8]&1<<(7-x%8) ? 1:0);
-		}
-	}
-}
-
 int main(int argc, char **argv){
-
 	/* Set up char sprites */	
 	memcpy(RAM+CHAR_SPRITES_OFFSET, char_sprites, sizeof(char_sprites));
 
