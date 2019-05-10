@@ -147,7 +147,12 @@ static void display(){
 	}
 }
 
-void step(){
+static void step(){
+	if(PC < 0x200 || PC >= 0x1000){
+		WARN("PC out of usable adress space: %X\n", (unsigned) PC);
+		return; /*TODO: abort? */
+	}
+
 	unsigned char instr[2] = {RAM[PC], RAM[PC+1]};
 	/* TODO: debug: print state */
 	PC+=2;
@@ -161,7 +166,9 @@ void step(){
 					send_draw();
 					return;
 				case 0x00EE: /* return from a subroutine */
-					if(SP)
+					if(!SP)
+						WARN("Stack underflow\n");
+					else
 						PC=STACK[--SP];
 					return;
 				default: /* legacy machine routine call */
@@ -174,7 +181,10 @@ void step(){
 			PC=I_ADDR(instr);
 			return;
 		case 2: /* call a subroutine */
-			STACK[SP++] = PC;
+			if(SP==16)
+				WARN("Stack overflow\n");
+			else
+				STACK[SP++] = PC;
 			PC=I_ADDR(instr);
 			return;
 		case 3:
@@ -250,6 +260,12 @@ void step(){
 			V[I_X(instr)] = rand() & I_NN(instr);
 			return;
 		case 0xD: /* display */
+			if(I+I_N(instr) >= 0x1000){
+				WARN("Sprite data out of memory bounds: %X..%X\n",
+						(unsigned)I, (unsigned)(I+I_N(instr)));
+				return;
+			}
+
 			V[0xf] = 0;
 			unsigned char x = V[I_X(instr)];
 			unsigned char y = V[I_Y(instr)];
@@ -257,7 +273,7 @@ void step(){
 
 			for(unsigned i=0;i<I_N(instr);i++){
 				unsigned char wrapped_y = (y+i)%32;
-				unsigned char *screen_tile = &SCREEN[wrapped_y*8+x/8];
+				unsigned char *screen_tile = &SCREEN[wrapped_y*8+(x/8)%8];
 				unsigned char sprite_tile = RAM[I+i]>>shift;
 				V[0xf] |= *screen_tile & sprite_tile ? 1:0;
 				*screen_tile ^= sprite_tile;
@@ -276,10 +292,16 @@ void step(){
 		case 0xE:
 			switch(I_NN(instr)){
 				case 0x9E:
+					if(V[I_X(instr)] > 16)
+						WARN("Unknown key: %u\n",
+								(unsigned)V[I_X(instr)]);
 					if(KEYBOARD & 1<<(V[I_X(instr)]))
 						PC+=2;
 					return;
 				case 0xA1:
+					if(V[I_X(instr)] > 16)
+						WARN("Unknown key: %u\n",
+								(unsigned)V[I_X(instr)]);
 					if(!(KEYBOARD & 1<<(V[I_X(instr)])))
 						PC+=2;
 					return;
@@ -312,22 +334,47 @@ void step(){
 					return;
 				case 0x1E:
 					I+=V[I_X(instr)];
+					/* Undocumented feature, reported on Wikipedia */
+					V[0xf] = I >= 0x1000 ? 1 : 0;
+					I &= 0xfff;
 					return;
 				case 0x29:
-					/*TODO: warn OOB */
-					if(V[I_X(instr)]<=0xF)
+					if(V[I_X(instr)]>0xF)
+						WARN("Too large input for a digit: %X\n",
+								(unsigned)V[I_X(instr)]);
+					else
 						I = CHAR_SPRITES_OFFSET + 5*V[I_X(instr)];
 					return;
 				case 0x33:
+					if(I<0x200 || I+3 >= 0x1000){
+						WARN("BCD store out of memory bounds: %X..%X\n",
+								(unsigned)I, (unsigned)(I+3));
+						return;
+					}
+
 					RAM[I+2] = V[I_X(instr)]%10;
 					RAM[I+1] = (V[I_X(instr)]/10)%10;
 					RAM[I]   = (V[I_X(instr)]/100)%10;
 					return;
 				case 0x55:
+					if(I<0x200 || I+I_X(instr) >= 0x1000){
+						WARN("Register store out of memory bounds: %X..%X\n",
+								(unsigned)I,
+								(unsigned)(I+I_X(instr)));
+						return;
+					}
+
 					for(unsigned i=0 ; i<=I_X(instr) ; i++)
 						RAM[I+i] = V[i];
 					return;
 				case 0x65:
+					if(I+I_X(instr) >= 0x1000){
+						WARN("Register load out of memory bounds: %X..%X\n",
+								(unsigned)I,
+								(unsigned)(I+I_X(instr)));
+						return;
+					}
+
 					for(unsigned i=0 ; i<=I_X(instr) ; i++)
 						V[i] = RAM[I+i];
 					return;
