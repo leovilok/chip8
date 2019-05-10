@@ -7,6 +7,7 @@
 #include "media.h"
 
 #define FREQ 840
+#define STACK_SIZE 24
 
 unsigned char RAM[0x1000];
 
@@ -19,7 +20,7 @@ unsigned char ST;
 unsigned short PC=0x200;
 unsigned char SP;
 
-unsigned short STACK[16];
+unsigned short STACK[STACK_SIZE];
 
 unsigned short KEYBOARD;
 
@@ -181,7 +182,7 @@ static void step(){
 			PC=I_ADDR(instr);
 			return;
 		case 2: /* call a subroutine */
-			if(SP==16)
+			if(SP==STACK_SIZE)
 				WARN("Stack overflow\n");
 			else
 				STACK[SP++] = PC;
