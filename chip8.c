@@ -323,7 +323,7 @@ static void step(){
 						PC-=2;
 					else {
 						V[I_X(instr)]=0;
-						for(unsigned char k=KEYBOARD;!(k&1);k>>=1)
+						for(unsigned short k=KEYBOARD;!(k&1);k>>=1)
 							V[I_X(instr)]++;
 					}
 					return;
