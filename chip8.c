@@ -418,9 +418,6 @@ int main(int argc, char **argv){
 
 		step();
 		
-		nanosleep(&(struct timespec){0,(1000000000/FREQ)},NULL);
-		//wait_tick();
-
 		if(!(i%(FREQ/60))){
 			send_draw();
 			if(DT)
