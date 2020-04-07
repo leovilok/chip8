@@ -10,9 +10,9 @@ unsigned short wait_input(unsigned short input);
 
 void clear_screen(void);
 void draw(int x, int y, int value);
-void send_draw(void);
-void set_buzzer_state(int state);
 
-void wait_tick(void);
+void frame(void);
+
+void set_buzzer_state(int state);
 
 #endif /* C8_MEDIA_H */

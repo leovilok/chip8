@@ -108,7 +108,7 @@ unsigned short wait_input(unsigned short input){
 	int new_input;
 	
 	while((new_input = get_input(input)) == input)
-		send_draw();
+		frame();
 
 	return new_input;
 }
@@ -125,7 +125,7 @@ void draw(int x, int y, int value){
 			value ? FG_COLOR : BG_COLOR);
 }
 
-void send_draw(void){
+void frame(void){
 	update_audio();
 
 	EndDrawing();

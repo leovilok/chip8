@@ -13,6 +13,7 @@
 #define WINDOW_NAME "CHIP-8 emulator"
 
 #define NUM_PIXELS (SCREEN_WIDTH*SCREEN_HEIGHT)
+#define SCREEN_RECT ((SDL_Rect){.x=0,.y=0,.w=SCREEN_WIDTH,.h=SCREEN_HEIGHT})
 
 #define SOUND_DEV_FREQ 48000
 #define SOUND_SAMPLES 1024
@@ -24,13 +25,9 @@ unsigned char *pixels;
 SDL_Window *window;
 SDL_Renderer *renderer;
 SDL_Texture *texture;
-SDL_Rect rect = {.x=0,.y=0,.w=SCREEN_WIDTH,.h=SCREEN_HEIGHT};
 
 /* sound state*/
 int buzzer_state = 0;
-long sample_num = 0;
-
-unsigned clock;
 
 /*
 ┌───┬───┬───┬───┐
@@ -54,6 +51,7 @@ SDL_Keycode keys[16] = {
 };
 
 static void buzzer_callback(void* userdata, Uint8* stream, int len){
+	static long sample_num = 0;
 	(void) userdata;
 	for(int i=0 ; i<len ; i++){
 		if(buzzer_state == 0)
@@ -98,8 +96,6 @@ int m_init(int argc, char **argv){
 			}, NULL);
 
 	SDL_PauseAudio(0);
-
-	clock = SDL_GetTicks();	
 
 	return 0;
 }
@@ -165,29 +161,18 @@ void draw(int x, int y, int value){
 	}
 }
 
-void send_draw(void){
+void frame(void){
 	void *texture_pixels;
 	int pitch; /* we don't actually use this, yolo */
-	SDL_LockTexture(texture, &rect, &texture_pixels, &pitch);
+	SDL_LockTexture(texture, &SCREEN_RECT, &texture_pixels, &pitch);
 	memcpy(texture_pixels, pixels, NUM_PIXELS);
 	SDL_UnlockTexture(texture);
 
-	SDL_RenderCopy(renderer, texture, &rect, &rect);
+	SDL_RenderCopy(renderer, texture, &SCREEN_RECT, &SCREEN_RECT);
 	SDL_RenderPresent(renderer);
 	SDL_RenderClear(renderer);
 }
 
 void set_buzzer_state(int state){
 	buzzer_state = state;
-}
-
-void wait_tick(void){
-	/* TODO: tunable frequency */
-	unsigned new_clock = SDL_GetTicks();
-
-	if(new_clock == clock){
-		SDL_Delay(1);
-	}
-
-	clock = SDL_GetTicks();
 }

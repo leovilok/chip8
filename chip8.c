@@ -164,7 +164,7 @@ static void step(){
 					for(int i=0 ; i<256 ; i++)
 						SCREEN[i] = 0;
 					clear_screen();
-					send_draw();
+					frame();
 					return;
 				case 0x00EE: /* return from a subroutine */
 					if(!SP)
@@ -419,7 +419,7 @@ int main(int argc, char **argv){
 		step();
 		
 		if(!(i%(FREQ/60))){
-			send_draw();
+			frame();
 			if(DT)
 				DT--;
 			if(ST)
