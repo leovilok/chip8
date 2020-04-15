@@ -5,6 +5,10 @@
 #define GLFW_INCLUDE_ES2
 #include <GLFW/glfw3.h>
 
+#define MA_NO_DECODING
+#define MINIAUDIO_IMPLEMENTATION
+#include "ext/miniaudio.h"
+
 #include "media.h"
 
 #define PIXEL_RADIUS 16
@@ -17,7 +21,10 @@
 #define NUM_PIXELS (32*64)
 
 #define SOUND_DEV_FREQ 48000
-#define SOUND_SAMPLES 1024
+#define SOUND_DEV_FORMAT ma_format_f32
+#define SOUND_DEV_CHANNELS 1
+
+#define BUZZER_WAVE_TYPE ma_waveform_type_sawtooth
 #define BUZZER_FREQ 440
 #define BUZZER_VOL .05
 
@@ -55,7 +62,8 @@ unsigned short input;
 
 
 /* sound state*/
-int buzzer_state = 0;
+ma_waveform wave;
+ma_device device;
 
 /*
 ┌───┬───┬───┬───┐
@@ -78,17 +86,9 @@ int keys[16] = {
 	GLFW_KEY_6, GLFW_KEY_Y, GLFW_KEY_H, GLFW_KEY_N
 };
 
-static void buzzer_callback(void *userdata, unsigned char *stream, int len){
-	static long sample_num = 0;
-	(void) userdata;
-	for(int i=0 ; i<len ; i++){
-		if(buzzer_state == 0)
-			stream[i] = 0;
-		else /* saw waves at the moment */
-			stream[i] =
-				((sample_num++*256*BUZZER_FREQ/SOUND_DEV_FREQ)
-				 %256)*BUZZER_VOL;
-	}
+static void buzzer_callback(ma_device *d, void *out, const void *in, ma_uint32 frame){
+	(void)in; (void)d;
+	ma_waveform_read_pcm_frames(&wave, out, frame);
 }
 
 static void key_callback(GLFWwindow* window, int key, int s, int action, int m){
@@ -165,10 +165,8 @@ static void setup_texture(void){
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, 64, 32, 0, GL_ALPHA, GL_UNSIGNED_BYTE, pixels);
 }
 
-int m_init(int argc, char **argv){
-	(void)argc, (void)argv;
-	/*TODO: check every init */
-
+static void init_graphics(void){
+	/* Init GLFW */
 	glfwInit();
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
@@ -181,13 +179,43 @@ int m_init(int argc, char **argv){
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
 	glfwSwapInterval(1);
-	
-	glfwSetKeyCallback(window, key_callback);
 
+	/* Init OpenGL */
 	setup_shaders();
 	setup_texture();
 	
 	glClear(GL_COLOR_BUFFER_BIT);
+}
+
+static void init_audio(void){
+	ma_waveform_config wave_config = ma_waveform_config_init(
+			SOUND_DEV_FORMAT, SOUND_DEV_CHANNELS, SOUND_DEV_FREQ,
+			BUZZER_WAVE_TYPE, BUZZER_VOL, BUZZER_FREQ);
+
+	ma_waveform_init(&wave_config, &wave);
+
+	ma_device_config device_config = ma_device_config_init(ma_device_type_playback);
+
+	device_config.playback.format   = SOUND_DEV_FORMAT;
+	device_config.playback.channels = SOUND_DEV_CHANNELS;
+	device_config.sampleRate        = SOUND_DEV_FREQ;
+	device_config.dataCallback      = buzzer_callback;
+
+	ma_device_init(NULL, &device_config, &device);
+	ma_device_start(&device);
+
+	ma_device_set_master_volume(&device, 0);
+}
+
+int m_init(int argc, char **argv){
+	(void)argc, (void)argv;
+	/*TODO: check every init */
+
+	init_graphics();
+
+	init_audio();
+
+	glfwSetKeyCallback(window, key_callback);
 
 	return 0;
 }
@@ -196,6 +224,8 @@ void m_quit(void){
 	glfwDestroyWindow(window);
 
 	glfwTerminate();
+
+	ma_device_uninit(&device);
 }
 
 unsigned short get_input(unsigned short old_input){
@@ -235,5 +265,9 @@ void frame(void){
 }
 
 void set_buzzer_state(int state){
-	buzzer_state = state;
+	static int old_state = 0;
+	if(state != old_state){
+		ma_device_set_master_volume(&device, state);
+		old_state = state;
+	}
 }

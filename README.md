@@ -28,14 +28,17 @@ cc chip8.c media-raylib.c -o chip8 $(pkg-config --cflags --libs raylib)
 ~~~
 
 Using [GLFW](https://www.glfw.org/) and
-[OpenGL ES](https://www.khronos.org/opengles/) 2.0:
+[OpenGL ES](https://www.khronos.org/opengles/) 2.0 for graphics rendering,
+and [miniaudio](https://miniaud.io/) for the buzzer:
 
 ~~~sh
 # with GNU make
 make MEDIA=glfw
 
 # Or directly
-cc chip8.c media-glfw.c -o chip8 -lglfw -lGLESv2 
+# with "-lglfw -lGLESv2" for GLFW and OpenGL ES
+# and "-ldl -lm -lpthread" for miniaudio on Linux
+cc chip8.c media-glfw.c -o chip8 -lglfw -lGLESv2 -ldl -lm -lpthread
 ~~~
 
 Run

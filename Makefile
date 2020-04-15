@@ -1,8 +1,10 @@
 MEDIA=sdl
 
+LIBS_MINIAUDIO=-ldl -lm -lpthread
+
 LIBS_sdl=-lSDL2
 LIBS_raylib=-lraylib
-LIBS_glfw=-lglfw -lGLESv2
+LIBS_glfw=-lglfw -lGLESv2 ${LIBS_MINIAUDIO}
 
 
 LDLIBS=${LIBS_${MEDIA}}
