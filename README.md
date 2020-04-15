@@ -27,6 +27,17 @@ make MEDIA=raylib
 cc chip8.c media-raylib.c -o chip8 $(pkg-config --cflags --libs raylib)
 ~~~
 
+Using [GLFW](https://www.glfw.org/) and
+[OpenGL ES](https://www.khronos.org/opengles/) 2.0:
+
+~~~sh
+# with GNU make
+make MEDIA=glfw
+
+# Or directly
+cc chip8.c media-glfw.c -o chip8 -lglfw -lGLESv2 
+~~~
+
 Run
 ---
 
@@ -44,7 +55,8 @@ Run the emulator:
 Details
 -------
 
-* CHIP-8 pixels are diplayed as 16px × 16px squares on screen (opens a 1024×512 window).
+* CHIP-8 pixels are diplayed as 16px × 16px squares on screen
+  (opens a 1024×512 window, resizable only in the GLFW implementation).
 * Background color is pure black, foreground color is pure white.
 * Buzzer uses a 440Hz saw wave.
 * To quit, just close the window (or press *Escape* using the Raylib implementation).
