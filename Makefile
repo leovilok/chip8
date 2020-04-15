@@ -1,6 +1,11 @@
 MEDIA=sdl
 
-LDLIBS=-l${MEDIA:sdl=SDL2}
+LIBS_sdl=-lSDL2
+LIBS_raylib=-lraylib
+LIBS_glfw=-lglfw -lGLESv2
+
+
+LDLIBS=${LIBS_${MEDIA}}
 
 chip8: media-${MEDIA}.o
 
